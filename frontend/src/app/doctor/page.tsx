@@ -1,0 +1,125 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+interface Appointment {
+    id: string;
+    date: string;
+    time: string;
+    status: string;
+    user?: { name: string };
+}
+
+export default function DoctorDashboard() {
+    const [user, setUser] = useState<{ name: string } | null>(null);
+    const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
+    const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
+
+    useEffect(() => {
+        const stored = localStorage.getItem('user');
+        if (stored) setUser(JSON.parse(stored));
+
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/appointments/doctor`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+                .then((r) => r.json())
+                .then((data) => {
+                    if (Array.isArray(data)) {
+                        const today = new Date().toISOString().split('T')[0];
+                        const todayAppts = data.filter((a: Appointment) => a.date.startsWith(today));
+                        setTodayAppointments(todayAppts.length > 0 ? todayAppts : data.slice(0, 4));
+                        setAllAppointments(data);
+                    }
+                })
+                .catch(() => { });
+        }
+    }, []);
+
+    const statusColors: Record<string, string> = {
+        PENDING: 'badge-pending', CONFIRMED: 'badge-confirmed',
+        COMPLETED: 'badge-completed', CANCELLED: 'badge-cancelled',
+    };
+
+    return (
+        <div>
+            <div className="mb-8">
+                <h1 className="font-playfair text-3xl font-bold mb-2" style={{ color: '#f0fdf4' }}>
+                    Good day, <span className="gradient-text">{user?.name || 'Doctor'}</span>
+                </h1>
+                <p className="text-sm" style={{ color: '#6b8f7e' }}>Here&apos;s your schedule overview for today.</p>
+            </div>
+
+            {/* Stats */}
+            <div className="grid sm:grid-cols-4 gap-4 mb-10">
+                {[
+                    { icon: '📅', label: "Today's Appointments", value: String(todayAppointments.length), color: '#047857' },
+                    { icon: '⏳', label: 'Pending Review', value: String(allAppointments.filter((a) => a.status === 'PENDING').length), color: '#d97706' },
+                    { icon: '✅', label: 'Completed', value: String(allAppointments.filter((a) => a.status === 'COMPLETED').length), color: '#059669' },
+                    { icon: '👥', label: 'Total Appointments', value: String(allAppointments.length), color: '#7c3aed' },
+                ].map((s) => (
+                    <div key={s.label} className="glass-card p-5">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">{s.icon}</span>
+                            <div>
+                                <p className="text-2xl font-bold" style={{ color: '#f0fdf4' }}>{s.value}</p>
+                                <p className="text-xs" style={{ color: '#6b8f7e' }}>{s.label}</p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Today's Schedule */}
+            <div className="glass-card p-6 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold" style={{ color: '#f0fdf4' }}>Today&apos;s Schedule</h2>
+                    <Link href="/doctor/appointments" className="text-sm font-medium hover:text-emerald-300" style={{ color: '#34d399' }}>
+                        View All →
+                    </Link>
+                </div>
+                <div className="space-y-3">
+                    {todayAppointments.map((apt) => (
+                        <div key={apt.id} className="flex items-center justify-between p-4 rounded-xl"
+                            style={{ background: 'rgba(4,120,87,0.05)', border: '1px solid rgba(4,120,87,0.1)' }}>
+                            <div className="flex items-center gap-4">
+                                <div className="text-center" style={{ minWidth: '60px' }}>
+                                    <p className="text-sm font-bold" style={{ color: '#34d399' }}>{apt.time}</p>
+                                </div>
+                                <div className="w-px h-8" style={{ background: 'rgba(4,120,87,0.2)' }} />
+                                <div>
+                                    <p className="font-semibold text-sm" style={{ color: '#f0fdf4' }}>{apt.user?.name}</p>
+                                    <p className="text-xs" style={{ color: '#6b8f7e' }}>Consultation</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className={`badge ${statusColors[apt.status]}`}>{apt.status}</span>
+                                <Link href="/doctor/appointments" className="text-xs px-3 py-1 rounded-lg transition-all hover:bg-emerald-900/30"
+                                    style={{ color: '#34d399', border: '1px solid rgba(4,120,87,0.2)' }}>
+                                    View
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid sm:grid-cols-3 gap-4">
+                {[
+                    { icon: '📋', title: 'Manage Appointments', desc: 'Accept, reject or reschedule', href: '/doctor/appointments' },
+                    { icon: '👥', title: 'Patient Records', desc: 'View patient details & notes', href: '/doctor/patients' },
+                    { icon: '🕐', title: 'Set Availability', desc: 'Update your schedule', href: '/doctor/availability' },
+                ].map((action) => (
+                    <Link key={action.title} href={action.href} className="glass-card p-6 group">
+                        <span className="text-3xl mb-3 block group-hover:scale-110 transition-transform">{action.icon}</span>
+                        <h3 className="font-semibold mb-1" style={{ color: '#f0fdf4' }}>{action.title}</h3>
+                        <p className="text-sm" style={{ color: '#6b8f7e' }}>{action.desc}</p>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+}
