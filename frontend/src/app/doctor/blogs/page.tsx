@@ -22,26 +22,27 @@ export default function DoctorBlogsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function loadBlogs() {
-            const stored = localStorage.getItem('user');
-            if (!stored) { setLoading(false); return; }
-            const user = JSON.parse(stored);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                try {
+                    const { data, error } = await supabase
+                        .from('blogs')
+                        .select('*')
+                        .eq('authorId', session.user.id)
+                        .order('createdAt', { ascending: false });
 
-            try {
-                const { data, error } = await supabase
-                    .from('blogs')
-                    .select('*')
-                    .eq('authorId', user.id)
-                    .order('createdAt', { ascending: false });
-
-                if (!error && data) setBlogs(data);
-            } catch (err) {
-                console.error('Error fetching blogs:', err);
-            } finally {
+                    if (!error && data) setBlogs(data);
+                } catch (err) {
+                    console.error('Error fetching blogs:', err);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
                 setLoading(false);
             }
-        }
-        loadBlogs();
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const deleteBlog = async (id: string) => {

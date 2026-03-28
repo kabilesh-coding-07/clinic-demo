@@ -34,24 +34,19 @@ export default function AppointmentsPage() {
     };
 
     useEffect(() => {
-        const stored = localStorage.getItem('user');
-        if (!stored) return;
-        const user = JSON.parse(stored);
-
-        async function loadAppointments() {
-            try {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
                 const { data, error } = await supabase
                     .from('appointments')
                     .select('*, doctor:doctors(specialty, user:users(name))')
-                    .eq('userId', user.id)
+                    .eq('userId', session.user.id)
                     .order('date', { ascending: false });
 
                 if (!error && data) setAppointments(data);
-            } catch (err) {
-                console.error('Error loading appointments:', err);
             }
-        }
-        loadAppointments();
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const statusColors: Record<string, string> = {

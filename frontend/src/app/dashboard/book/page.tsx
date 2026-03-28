@@ -47,19 +47,16 @@ export default function BookAppointmentPage() {
         setLoading(true);
         setError('');
 
-        const stored = localStorage.getItem('user');
-        if (!stored) { setError('User session not found'); setLoading(false); return; }
-        const user = JSON.parse(stored);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setError('User session not found'); setLoading(false); return; }
 
         try {
             const { error } = await supabase
                 .from('appointments')
                 .insert([{
                     ...form,
-                    id: crypto.randomUUID(),
-                    userId: user.id,
+                    userId: session.user.id,
                     status: 'PENDING',
-                    createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 }]);
 

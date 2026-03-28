@@ -22,34 +22,29 @@ export default function DoctorAppointmentsPage() {
     const [noteText, setNoteText] = useState('');
 
     useEffect(() => {
-        async function loadAppointments() {
-            const stored = localStorage.getItem('user');
-            if (!stored) return;
-            const user = JSON.parse(stored);
-
-            try {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
                 // 1. Get doctor_id
                 const { data: doctor } = await supabase
                     .from('doctors')
                     .select('id')
-                    .eq('userId', user.id)
+                    .eq('userId', session.user.id)
                     .single();
 
-                if (!doctor) return;
+                if (doctor) {
+                    // 2. Fetch appointments
+                    const { data: appts, error } = await supabase
+                        .from('appointments')
+                        .select('*, user:users!appointments_userId_fkey(name, email, phone)')
+                        .eq('doctorId', doctor.id)
+                        .order('date', { ascending: false });
 
-                // 2. Fetch appointments
-                const { data: appts, error } = await supabase
-                    .from('appointments')
-                    .select('*, user:users!appointments_userId_fkey(name, email, phone)')
-                    .eq('doctorId', doctor.id)
-                    .order('date', { ascending: false });
-
-                if (!error && appts) setAppointments(appts);
-            } catch (err) {
-                console.error('Error fetching appointments:', err);
+                    if (!error && appts) setAppointments(appts);
+                }
             }
-        }
-        loadAppointments();
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const updateStatus = async (id: string, status: string) => {

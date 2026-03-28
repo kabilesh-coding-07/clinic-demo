@@ -36,40 +36,32 @@ export default function AvailabilityPage() {
 
     // Load saved availability on mount
     useEffect(() => {
-        async function loadProfile() {
-            const stored = localStorage.getItem('user');
-            if (!stored) { setLoadingData(false); return; }
-            const user = JSON.parse(stored);
-
-            try {
-                const { data: doctor, error } = await supabase
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                const { data: doctor } = await supabase
                     .from('doctors')
                     .select('id, availability')
-                    .eq('userId', user.id)
+                    .eq('userId', session.user.id)
                     .single();
 
-                if (error || !doctor) {
-                    setLoadingData(false);
-                    return;
+                if (doctor) {
+                    setDoctorId(doctor.id);
+                    if (doctor.availability) {
+                        const parsed = typeof doctor.availability === 'string' 
+                            ? JSON.parse(doctor.availability) 
+                            : doctor.availability;
+                        
+                        if (parsed.schedule) setSchedule(parsed.schedule);
+                        if (parsed.consultDuration) setConsultDuration(parsed.consultDuration);
+                    }
                 }
-
-                setDoctorId(doctor.id);
-
-                if (doctor.availability) {
-                    const parsed = typeof doctor.availability === 'string' 
-                        ? JSON.parse(doctor.availability) 
-                        : doctor.availability;
-                    
-                    if (parsed.schedule) setSchedule(parsed.schedule);
-                    if (parsed.consultDuration) setConsultDuration(parsed.consultDuration);
-                }
-            } catch (err) {
-                console.error('Error loading availability:', err);
-            } finally {
+                setLoadingData(false);
+            } else {
                 setLoadingData(false);
             }
-        }
-        loadProfile();
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const toggleDay = (index: number) => {

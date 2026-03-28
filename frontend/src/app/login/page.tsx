@@ -47,12 +47,20 @@ export default function LoginPage() {
 
             if (signInError) throw signInError;
 
-            // Fetch profile to check role
-            const { data: profile } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', data.user.id)
-                .single();
+            // Fetch profile with a small delay/retry in case trigger hasn't finished
+            let profile = null;
+            for (let i = 0; i < 3; i++) {
+                const { data: p } = await supabase
+                    .from('users')
+                    .select('role')
+                    .eq('id', data.user.id)
+                    .single();
+                if (p) {
+                    profile = p;
+                    break;
+                }
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
 
             const role = profile?.role || 'USER';
             
@@ -62,13 +70,14 @@ export default function LoginPage() {
                 throw new Error('This account is not registered as a doctor.');
             }
             if (mode === 'patient' && role === 'DOCTOR') {
-                await supabase.auth.signOut();
-                throw new Error('Doctor account detected. Please use "Doctor Login".');
+                // If they logged in to patient portal with doctor credentials, we redirect them to doctor portal
+                router.push('/doctor');
+                return;
             }
 
             router.push(role === 'DOCTOR' ? '/doctor' : '/dashboard');
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Login failed');
+        } catch (err: any) {
+            setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }

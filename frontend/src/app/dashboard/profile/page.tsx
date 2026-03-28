@@ -14,17 +14,13 @@ export default function ProfilePage() {
     const [stats, setStats] = useState({ totalVisits: 0, activePlans: 0, nextDate: '—' });
 
     useEffect(() => {
-        const stored = localStorage.getItem('user');
-        if (!stored) return;
-        const user = JSON.parse(stored);
-
-        async function loadProfile() {
-            try {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
                 // Fetch full profile
                 const { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('*')
-                    .eq('id', user.id)
+                    .eq('id', session.user.id)
                     .single();
 
                 if (!userError && userData) {
@@ -40,7 +36,7 @@ export default function ProfilePage() {
                 const { data: apts, error: aptsError } = await supabase
                     .from('appointments')
                     .select('*')
-                    .eq('userId', user.id);
+                    .eq('userId', session.user.id);
 
                 if (!aptsError && Array.isArray(apts)) {
                     const now = new Date();
@@ -54,19 +50,17 @@ export default function ProfilePage() {
                         nextDate: upcoming.length > 0 ? new Date(upcoming[0].date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : '—',
                     });
                 }
-            } catch (err) {
-                console.error('Error loading profile:', err);
             }
-        }
-        loadProfile();
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const stored = localStorage.getItem('user');
-        if (!stored) return;
-        const user = JSON.parse(stored);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
 
         try {
             const { data: updated, error } = await supabase
@@ -76,12 +70,11 @@ export default function ProfilePage() {
                     phone: form.phone, 
                     medicalHistory: form.medicalHistory 
                 })
-                .eq('id', user.id)
+                .eq('id', session.user.id)
                 .select()
                 .single();
 
             if (!error && updated) {
-                localStorage.setItem('user', JSON.stringify(updated));
                 setSaved(true);
                 setTimeout(() => setSaved(false), 3000);
             }

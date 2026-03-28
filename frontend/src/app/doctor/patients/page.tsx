@@ -23,59 +23,54 @@ export default function PatientsPage() {
     const [patients, setPatients] = useState<Patient[]>([]);
 
     useEffect(() => {
-        async function loadPatients() {
-            const stored = localStorage.getItem('user');
-            if (!stored) return;
-            const user = JSON.parse(stored);
-
-            try {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
                 // 1. Get doctor_id
                 const { data: doctor } = await supabase
                     .from('doctors')
                     .select('id')
-                    .eq('userId', user.id)
+                    .eq('userId', session.user.id)
                     .single();
 
-                if (!doctor) return;
+                if (doctor) {
+                    // 2. Fetch appointments with patient data
+                    const { data: appts, error } = await supabase
+                        .from('appointments')
+                        .select('*, user:users!appointments_userId_fkey(name, email, phone, medicalHistory)')
+                        .eq('doctorId', doctor.id);
 
-                // 2. Fetch appointments with patient data
-                const { data: appts, error } = await supabase
-                    .from('appointments')
-                    .select('*, user:users!appointments_userId_fkey(name, email, phone, medicalHistory)')
-                    .eq('doctorId', doctor.id);
-
-                if (error || !appts) return;
-
-                // 3. Extract unique patients
-                const patientMap = new Map<string, Patient>();
-                for (const apt of appts) {
-                    if (!apt.user) continue;
-                    const existing = patientMap.get(apt.userId);
-                    if (existing) {
-                        existing.totalVisits++;
-                        if (new Date(apt.date) > new Date(existing.lastVisit)) {
-                            existing.lastVisit = apt.date;
-                            existing.symptoms = apt.symptoms || existing.symptoms;
+                    if (!error && appts) {
+                        // 3. Extract unique patients
+                        const patientMap = new Map<string, Patient>();
+                        for (const apt of appts) {
+                            if (!apt.user) continue;
+                            const existing = patientMap.get(apt.userId);
+                            if (existing) {
+                                existing.totalVisits++;
+                                if (new Date(apt.date) > new Date(existing.lastVisit)) {
+                                    existing.lastVisit = apt.date;
+                                    existing.symptoms = apt.symptoms || existing.symptoms;
+                                }
+                            } else {
+                                patientMap.set(apt.userId, {
+                                    id: apt.userId,
+                                    name: apt.user.name,
+                                    email: apt.user.email,
+                                    phone: apt.user.phone,
+                                    medicalHistory: apt.user.medicalHistory,
+                                    lastVisit: apt.date,
+                                    totalVisits: 1,
+                                    symptoms: apt.symptoms || t('doctor.consultation'),
+                                });
+                            }
                         }
-                    } else {
-                        patientMap.set(apt.userId, {
-                            id: apt.userId,
-                            name: apt.user.name,
-                            email: apt.user.email,
-                            phone: apt.user.phone,
-                            medicalHistory: apt.user.medicalHistory,
-                            lastVisit: apt.date,
-                            totalVisits: 1,
-                            symptoms: apt.symptoms || t('doctor.consultation'),
-                        });
+                        setPatients(Array.from(patientMap.values()));
                     }
                 }
-                setPatients(Array.from(patientMap.values()));
-            } catch (err) {
-                console.error('Error loading patients:', err);
             }
-        }
-        loadPatients();
+        });
+
+        return () => subscription.unsubscribe();
     }, [t]);
 
     const filtered = patients.filter((p) =>

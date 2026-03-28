@@ -17,9 +17,8 @@ export default function CreateBlogPage() {
         setLoading(true);
         setError('');
 
-        const stored = localStorage.getItem('user');
-        if (!stored) { setError('User session not found'); setLoading(false); return; }
-        const user = JSON.parse(stored);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setError('User session not found'); setLoading(false); return; }
 
         const slug = form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -29,7 +28,7 @@ export default function CreateBlogPage() {
                 .insert([{
                     ...form,
                     slug,
-                    authorId: user.id
+                    authorId: session.user.id
                 }]);
 
             if (error) throw error;

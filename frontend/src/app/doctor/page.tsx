@@ -20,42 +20,44 @@ export default function DoctorDashboard() {
     const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
 
     useEffect(() => {
-        async function loadData() {
-            const stored = localStorage.getItem('user');
-            if (!stored) return;
-            const userData = JSON.parse(stored);
-            setUser(userData);
-
-            try {
-                // 1. Get the doctor_id for this user
-                const { data: doctor, error: docError } = await supabase
-                    .from('doctors')
-                    .select('id')
-                    .eq('userId', userData.id)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                // 1. Fetch user profile
+                const { data: profile } = await supabase
+                    .from('users')
+                    .select('id, name')
+                    .eq('id', session.user.id)
                     .single();
-
-                if (docError || !doctor) return;
-
-                // 2. Fetch appointments for this doctor (including patient info)
-                const { data: appts, error: apptError } = await supabase
-                    .from('appointments')
-                    .select('*, user:users!appointments_userId_fkey(name)')
-                    .eq('doctorId', doctor.id)
-                    .order('date', { ascending: true });
-
-                if (apptError || !appts) return;
-
-                const today = new Date().toISOString().split('T')[0];
-                const todayAppts = appts.filter((a: any) => a.date.startsWith(today));
                 
-                setTodayAppointments(todayAppts.length > 0 ? todayAppts : appts.slice(0, 4));
-                setAllAppointments(appts);
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            }
-        }
+                if (profile) {
+                    setUser(profile);
+                    
+                    // 2. Load doctor data and appointments
+                    const { data: doctor } = await supabase
+                        .from('doctors')
+                        .select('id')
+                        .eq('userId', profile.id)
+                        .single();
 
-        loadData();
+                    if (doctor) {
+                        const { data: appts } = await supabase
+                            .from('appointments')
+                            .select('*, user:users!appointments_userId_fkey(name)')
+                            .eq('doctorId', doctor.id)
+                            .order('date', { ascending: true });
+
+                        if (appts) {
+                            const today = new Date().toISOString().split('T')[0];
+                            const todayAppts = appts.filter((a: any) => a.date.startsWith(today));
+                            setTodayAppointments(todayAppts.length > 0 ? todayAppts : appts.slice(0, 4));
+                            setAllAppointments(appts);
+                        }
+                    }
+                }
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const statusColors: Record<string, string> = {
