@@ -23,6 +23,7 @@ const ta = {
         yearsExp: 'வருட அனுபவம்',
         search: 'தேடு',
         noResults: 'முடிவுகள் எதுவும் இல்லை',
+        phonePlaceholder: 'உங்கள் தொலைபேசி எண்ணை உள்ளிடவும்',
         locale: 'ta'
     },
 

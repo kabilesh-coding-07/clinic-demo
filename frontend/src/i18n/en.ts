@@ -23,6 +23,7 @@ const en = {
         yearsExp: 'years experience',
         search: 'Search',
         noResults: 'No results found',
+        phonePlaceholder: 'Enter your phone number',
         locale: 'en',
     },
 
