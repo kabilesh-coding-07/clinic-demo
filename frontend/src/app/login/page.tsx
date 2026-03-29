@@ -21,13 +21,22 @@ export default function LoginPage() {
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                const { data: profile } = await supabase
-                    .from('users')
-                    .select('role')
-                    .eq('id', session.user.id)
-                    .single();
+                // Fetch profile with retry loop
+                let profile = null;
+                for (let i = 0; i < 3; i++) {
+                    const { data: p } = await supabase
+                        .from('users')
+                        .select('role')
+                        .eq('id', session.user.id)
+                        .single();
+                    if (p) {
+                        profile = p;
+                        break;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
                 
-                const role = profile?.role || 'USER';
+                const role = profile?.role || session.user.user_metadata?.role || 'USER';
                 router.push(role === 'DOCTOR' ? '/doctor' : '/dashboard');
             }
         };
@@ -62,7 +71,7 @@ export default function LoginPage() {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            const role = profile?.role || 'USER';
+            const role = profile?.role || data.user.user_metadata?.role || 'USER';
             
             // Validate login mode
             if (mode === 'doctor' && role !== 'DOCTOR') {

@@ -46,13 +46,22 @@ export async function middleware(request: NextRequest) {
     // For real performance, we'd use a custom claim in JWT, 
     // but for now we'll fetch profile if on a sensitive route
     if (url.pathname.startsWith('/doctor') || url.pathname.startsWith('/dashboard')) {
-        const { data: profile } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .single()
+        let profile = null
+        for (let i = 0; i < 3; i++) {
+            const { data: p } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', user.id)
+                .single()
+            if (p) {
+                profile = p
+                break
+            }
+            // Wait 500ms before next retry
+            await new Promise(resolve => setTimeout(resolve, 500))
+        }
         
-        const role = profile?.role || 'USER'
+        const role = profile?.role || user.user_metadata?.role || 'USER'
         
         if (url.pathname.startsWith('/doctor') && role !== 'DOCTOR') {
             url.pathname = '/dashboard'
