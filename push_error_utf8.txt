@@ -1,0 +1,127 @@
+﻿git : remote: This 
+repository moved. Please 
+use the new location:     
+   
+At line:1 char:1
++ git push origin main 
+--force 2>&1 | Tee-Object 
+-FilePath push_error.t ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (r  
+  emote: This re...cati   
+ on:        :String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+remote:   https://github.c
+om/kabilesh-coding-07/Sidd
+haWellness.git        
+remote: error: GH013: 
+Repository rule 
+violations found for 
+refs/heads/main.        
+remote: 
+remote: - GITHUB PUSH 
+PROTECTION        
+remote:   ÔÇöÔÇöÔÇöÔÇöÔÇöÔ
+ÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇö
+ÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇ
+öÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔ
+ÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇö
+ÔÇö        
+remote:     Resolve the 
+following violations 
+before pushing again      
+  
+remote: 
+remote:     - Push cannot 
+contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn 
+how to resolve a blocked 
+push        
+remote:      https://docs.
+github.com/code-security/s
+ecret-scanning/working-wit
+h-secret-scanning-and-push
+-protection/working-with-p
+ush-protection-from-the-co
+mmand-line#resolving-a-blo
+cked-push        
+remote:             
+remote:             
+remote:       ÔÇöÔÇö 
+Google OAuth Client ID ÔÇö
+ÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇ
+öÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔ
+ÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇö
+ÔÇö        
+remote:        locations: 
+       
+remote:          - 
+commit: ecfc1d9dae0e2ab817
+cbe3b8fe86f976a0a8352a    
+    
+remote:            path: .
+env.vercel.frontend.verify
+.local:2        
+remote:             
+remote:        (?) To 
+push, remove secret from 
+commit(s) or follow this 
+URL to allow the secret.  
+      
+remote:        https://git
+hub.com/kabilesh-coding-07
+/SiddhaWellness/security/s
+ecret-scanning/unblock-sec
+ret/3BlCdeafBIjOC9eiMoUCtI
+Nwj34        
+remote:             
+remote:             
+remote:       ÔÇöÔÇö 
+Google OAuth Client 
+Secret ÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔ
+ÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇö
+ÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇ
+ö        
+remote:        locations: 
+       
+remote:          - 
+commit: ecfc1d9dae0e2ab817
+cbe3b8fe86f976a0a8352a    
+    
+remote:            path: .
+env.vercel.frontend.verify
+.local:3        
+remote:             
+remote:        (?) To 
+push, remove secret from 
+commit(s) or follow this 
+URL to allow the secret.  
+      
+remote:        https://git
+hub.com/kabilesh-coding-07
+/SiddhaWellness/security/s
+ecret-scanning/unblock-sec
+ret/3BlCdhy1NvB2jKnWKkZFYq
+8m311        
+remote:             
+remote: 
+remote: 
+To https://github.com/kabi
+lesh-coding-07/clinic-demo
+.git
+ ! [remote rejected] main 
+-> main (push declined 
+due to repository rule 
+violations)
+error: failed to push 
+some refs to 'https://gith
+ub.com/kabilesh-coding-07/
+clinic-demo.git'
