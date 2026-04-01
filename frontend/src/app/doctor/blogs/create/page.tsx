@@ -33,8 +33,8 @@ export default function CreateBlogPage() {
 
             if (error) throw error;
             router.push('/doctor/blogs');
-        } catch (err: any) {
-            setError(err.message || 'Failed to create blog');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to create blog');
         } finally {
             setLoading(false);
         }

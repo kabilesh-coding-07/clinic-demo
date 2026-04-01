@@ -16,62 +16,68 @@ interface Patient {
     symptoms: string;
 }
 
+import { useUser } from '@/providers/user-context';
+
+
 export default function PatientsPage() {
     const { t } = useLanguage();
+    const { profile: user, loading: userLoading } = useUser();
     const [search, setSearch] = useState('');
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
     const [patients, setPatients] = useState<Patient[]>([]);
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                // 1. Get doctor_id
-                const { data: doctor } = await supabase
-                    .from('doctors')
-                    .select('id')
-                    .eq('userId', session.user.id)
-                    .single();
+        const loadPatients = async () => {
+            if (!user) return;
+            
+            // 1. Get doctor_id
+            const { data: doctor } = await supabase
+                .from('doctors')
+                .select('id')
+                .eq('userId', user.id)
+                .single();
 
-                if (doctor) {
-                    // 2. Fetch appointments with patient data
-                    const { data: appts, error } = await supabase
-                        .from('appointments')
-                        .select('*, user:users!appointments_userId_fkey(name, email, phone, medicalHistory)')
-                        .eq('doctorId', doctor.id);
+            if (doctor) {
+                // 2. Fetch appointments with patient data
+                const { data: appts, error } = await supabase
+                    .from('appointments')
+                    .select('*, user:users!appointments_userId_fkey(name, email, phone, medicalHistory)')
+                    .eq('doctorId', doctor.id);
 
-                    if (!error && appts) {
-                        // 3. Extract unique patients
-                        const patientMap = new Map<string, Patient>();
-                        for (const apt of appts) {
-                            if (!apt.user) continue;
-                            const existing = patientMap.get(apt.userId);
-                            if (existing) {
-                                existing.totalVisits++;
-                                if (new Date(apt.date) > new Date(existing.lastVisit)) {
-                                    existing.lastVisit = apt.date;
-                                    existing.symptoms = apt.symptoms || existing.symptoms;
-                                }
-                            } else {
-                                patientMap.set(apt.userId, {
-                                    id: apt.userId,
-                                    name: apt.user.name,
-                                    email: apt.user.email,
-                                    phone: apt.user.phone,
-                                    medicalHistory: apt.user.medicalHistory,
-                                    lastVisit: apt.date,
-                                    totalVisits: 1,
-                                    symptoms: apt.symptoms || t('doctor.consultation'),
-                                });
+                if (!error && appts) {
+                    // 3. Extract unique patients
+                    const patientMap = new Map<string, Patient>();
+                    for (const apt of appts) {
+                        if (!apt.user) continue;
+                        const existing = patientMap.get(apt.userId);
+                        if (existing) {
+                            existing.totalVisits++;
+                            if (new Date(apt.date) > new Date(existing.lastVisit)) {
+                                existing.lastVisit = apt.date;
+                                existing.symptoms = apt.symptoms || existing.symptoms;
                             }
+                        } else {
+                            patientMap.set(apt.userId, {
+                                id: apt.userId,
+                                name: apt.user.name,
+                                email: apt.user.email,
+                                phone: apt.user.phone,
+                                medicalHistory: apt.user.medicalHistory,
+                                lastVisit: apt.date,
+                                totalVisits: 1,
+                                symptoms: apt.symptoms || t('doctor.consultation'),
+                            });
                         }
-                        setPatients(Array.from(patientMap.values()));
                     }
+                    setPatients(Array.from(patientMap.values()));
                 }
             }
-        });
+        };
 
-        return () => subscription.unsubscribe();
-    }, [t]);
+        if (user) {
+            loadPatients();
+        }
+    }, [user, t]);
 
     const filtered = patients.filter((p) =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||

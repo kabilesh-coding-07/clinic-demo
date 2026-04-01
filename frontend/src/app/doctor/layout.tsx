@@ -12,45 +12,29 @@ const sidebarLinks = [
     { href: '/doctor/blogs', label: 'Blog Management', icon: '📝' },
 ];
 
-import { createClient } from '@/utils/supabase/client';
+import { useUser } from '@/providers/user-context';
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+    const { profile: user, loading, signOut } = useUser();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const supabase = createClient();
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                const { data: profile } = await supabase
-                    .from('users')
-                    .select('name, email, role')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                if (profile) {
-                    if (profile.role !== 'DOCTOR') {
-                        router.push('/dashboard');
-                    } else {
-                        setUser(profile);
-                    }
-                }
-            } else {
-                router.push('/login');
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [router, supabase]);
+        if (!loading && user && user.role !== 'DOCTOR') {
+            router.push('/dashboard');
+        }
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        await signOut();
         router.push('/');
     };
 
-    if (!user) return null;
+    if (loading || !user || user.role !== 'DOCTOR') return null;
 
     return (
         <div className="min-h-screen flex" style={{ background: '#0a0f0d' }}>

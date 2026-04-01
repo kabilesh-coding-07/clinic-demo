@@ -14,38 +14,43 @@ interface Appointment {
     user?: { name: string; email: string; phone?: string };
 }
 
+import { useUser } from '@/providers/user-context';
+
 export default function DoctorAppointmentsPage() {
     const { t } = useLanguage();
+    const { profile: user, loading: userLoading } = useUser();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [filter, setFilter] = useState('ALL');
     const [noteModal, setNoteModal] = useState<string | null>(null);
     const [noteText, setNoteText] = useState('');
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                // 1. Get doctor_id
-                const { data: doctor } = await supabase
-                    .from('doctors')
-                    .select('id')
-                    .eq('userId', session.user.id)
-                    .single();
+        const loadAppointments = async () => {
+            if (!user) return;
+            
+            // 1. Get doctor_id
+            const { data: doctor } = await supabase
+                .from('doctors')
+                .select('id')
+                .eq('userId', user.id)
+                .single();
 
-                if (doctor) {
-                    // 2. Fetch appointments
-                    const { data: appts, error } = await supabase
-                        .from('appointments')
-                        .select('*, user:users!appointments_userId_fkey(name, email, phone)')
-                        .eq('doctorId', doctor.id)
-                        .order('date', { ascending: false });
+            if (doctor) {
+                // 2. Fetch appointments
+                const { data: appts, error } = await supabase
+                    .from('appointments')
+                    .select('*, user:users!appointments_userId_fkey(name, email, phone)')
+                    .eq('doctorId', doctor.id)
+                    .order('date', { ascending: false });
 
-                    if (!error && appts) setAppointments(appts);
-                }
+                if (!error && appts) setAppointments(appts);
             }
-        });
+        };
 
-        return () => subscription.unsubscribe();
-    }, []);
+        if (user) {
+            loadAppointments();
+        }
+    }, [user]);
 
     const updateStatus = async (id: string, status: string) => {
         try {

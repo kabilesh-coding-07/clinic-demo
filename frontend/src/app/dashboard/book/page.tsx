@@ -63,8 +63,8 @@ export default function BookAppointmentPage() {
             if (error) throw error;
             setSuccess(true);
             setTimeout(() => router.push('/dashboard/appointments'), 2000);
-        } catch (err: any) {
-            setError(err.message || 'Booking failed');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Booking failed');
         } finally {
             setLoading(false);
         }

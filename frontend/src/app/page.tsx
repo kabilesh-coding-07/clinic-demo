@@ -6,11 +6,24 @@ import { useLanguage } from '@/i18n';
 
 import { supabase } from '@/lib/supabase';
 
+interface HomeService {
+    icon: string;
+    title: string;
+    desc: string;
+}
+
+interface HomeBlog {
+    title: string;
+    excerpt: string;
+    date: string;
+    slug: string;
+}
+
 export default function HomePage() {
   const { t } = useLanguage();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [services, setServices] = useState<any[]>([]);
-  const [blogs, setBlogs] = useState<any[]>([]);
+  const [services, setServices] = useState<HomeService[]>([]);
+  const [blogs, setBlogs] = useState<HomeBlog[]>([]);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

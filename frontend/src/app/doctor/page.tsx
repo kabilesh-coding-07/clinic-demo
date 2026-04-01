@@ -13,52 +13,45 @@ interface Appointment {
     user?: { name: string };
 }
 
+import { useUser } from '@/providers/user-context';
+
 export default function DoctorDashboard() {
     const { t } = useLanguage();
-    const [user, setUser] = useState<{ id: string, name: string } | null>(null);
+    const { profile: user, loading: userLoading } = useUser();
     const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
     const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                // 1. Fetch user profile
-                const { data: profile } = await supabase
-                    .from('users')
-                    .select('id, name')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                if (profile) {
-                    setUser(profile);
-                    
-                    // 2. Load doctor data and appointments
-                    const { data: doctor } = await supabase
-                        .from('doctors')
-                        .select('id')
-                        .eq('userId', profile.id)
-                        .single();
+        const loadDoctorData = async () => {
+            if (!user) return;
+            
+            // 2. Load doctor data and appointments
+            const { data: doctor } = await supabase
+                .from('doctors')
+                .select('id')
+                .eq('userId', user.id)
+                .single();
 
-                    if (doctor) {
-                        const { data: appts } = await supabase
-                            .from('appointments')
-                            .select('*, user:users!appointments_userId_fkey(name)')
-                            .eq('doctorId', doctor.id)
-                            .order('date', { ascending: true });
+            if (doctor) {
+                const { data: appts } = await supabase
+                    .from('appointments')
+                    .select('*, user:users!appointments_userId_fkey(name)')
+                    .eq('doctorId', doctor.id)
+                    .order('date', { ascending: true });
 
-                        if (appts) {
-                            const today = new Date().toISOString().split('T')[0];
-                            const todayAppts = appts.filter((a: any) => a.date.startsWith(today));
-                            setTodayAppointments(todayAppts.length > 0 ? todayAppts : appts.slice(0, 4));
-                            setAllAppointments(appts);
-                        }
-                    }
+                if (appts) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayAppts = (appts as Appointment[]).filter((a) => a.date.startsWith(today));
+                    setTodayAppointments(todayAppts.length > 0 ? todayAppts : appts.slice(0, 4));
+                    setAllAppointments(appts);
                 }
             }
-        });
+        };
 
-        return () => subscription.unsubscribe();
-    }, []);
+        if (user) {
+            loadDoctorData();
+        }
+    }, [user]);
 
     const statusColors: Record<string, string> = {
         PENDING: 'badge-pending', CONFIRMED: 'badge-confirmed',

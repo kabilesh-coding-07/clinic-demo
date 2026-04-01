@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/i18n';
+import { Appointment } from '@/types';
 
 
 import { supabase } from '@/lib/supabase';
@@ -41,12 +42,12 @@ export default function ProfilePage() {
 
                 if (!aptsError && Array.isArray(apts)) {
                     const now = new Date();
-                    const upcoming = apts
-                        .filter((a: any) => new Date(a.date) >= now && a.status !== 'CANCELLED')
-                        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                    const upcoming = (apts as Appointment[])
+                        .filter((a) => new Date(a.date) >= now && a.status !== 'CANCELLED')
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                     
                     setStats({
-                        totalVisits: apts.filter((a: any) => a.status === 'COMPLETED').length,
+                        totalVisits: (apts as Appointment[]).filter((a) => a.status === 'COMPLETED').length,
                         activePlans: upcoming.length,
                         nextDate: upcoming.length > 0 ? new Date(upcoming[0].date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : '—',
                     });
@@ -82,12 +83,12 @@ export default function ProfilePage() {
 
                 if (!aptsError && Array.isArray(apts)) {
                     const now = new Date();
-                    const upcoming = apts
-                        .filter((a: any) => new Date(a.date) >= now && a.status !== 'CANCELLED')
-                        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                    const upcoming = (apts as Appointment[])
+                        .filter((a) => new Date(a.date) >= now && a.status !== 'CANCELLED')
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                     
                     setStats({
-                        totalVisits: apts.filter((a: any) => a.status === 'COMPLETED').length,
+                        totalVisits: (apts as Appointment[]).filter((a) => a.status === 'COMPLETED').length,
                         activePlans: upcoming.length,
                         nextDate: upcoming.length > 0 ? new Date(upcoming[0].date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : '—',
                     });

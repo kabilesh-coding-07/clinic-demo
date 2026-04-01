@@ -60,8 +60,8 @@ export default function EditBlogPage() {
 
             if (error) throw error;
             router.push('/doctor/blogs');
-        } catch (err: any) {
-            setError(err.message || 'Failed to update blog');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to update blog');
         } finally {
             setLoading(false);
         }

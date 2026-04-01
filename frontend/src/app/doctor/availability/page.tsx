@@ -26,8 +26,11 @@ const defaultSchedule: DaySchedule[] = [
 ];
 
 
+import { useUser } from '@/providers/user-context';
+
 export default function AvailabilityPage() {
     const { t } = useLanguage();
+    const { profile: user, loading: userLoading } = useUser();
     const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule);
     const [saved, setSaved] = useState(false);
     const [consultDuration, setConsultDuration] = useState('30');
@@ -36,12 +39,19 @@ export default function AvailabilityPage() {
 
     // Load saved availability on mount
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
+        const loadAvailability = async () => {
+            if (!user) {
+                if (!userLoading) {
+                    setLoadingData(false);
+                }
+                return;
+            }
+            
+            try {
                 const { data: doctor } = await supabase
                     .from('doctors')
                     .select('id, availability')
-                    .eq('userId', session.user.id)
+                    .eq('userId', user.id)
                     .single();
 
                 if (doctor) {
@@ -55,14 +65,15 @@ export default function AvailabilityPage() {
                         if (parsed.consultDuration) setConsultDuration(parsed.consultDuration);
                     }
                 }
-                setLoadingData(false);
-            } else {
+            } catch (err) {
+                console.error('Error loading availability:', err);
+            } finally {
                 setLoadingData(false);
             }
-        });
+        };
 
-        return () => subscription.unsubscribe();
-    }, []);
+        loadAvailability();
+    }, [user, userLoading]);
 
     const toggleDay = (index: number) => {
         setSchedule((prev) => prev.map((d, i) => i === index ? { ...d, enabled: !d.enabled } : d));

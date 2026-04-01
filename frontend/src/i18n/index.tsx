@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import en from './en';
 import ta from './ta';
 
@@ -22,14 +22,15 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-    const [lang, setLangState] = useState<Language>('en');
-
-    useEffect(() => {
-        const saved = localStorage.getItem('lang') as Language;
-        if (saved && (saved === 'en' || saved === 'ta')) {
-            setLangState(saved);
+    const [lang, setLangState] = useState<Language>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('lang') as Language;
+            if (saved && (saved === 'en' || saved === 'ta')) {
+                return saved;
+            }
         }
-    }, []);
+        return 'en';
+    });
 
     const setLang = (newLang: Language) => {
         setLangState(newLang);

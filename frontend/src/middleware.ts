@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({
             request: {
               headers: request.headers,
@@ -46,20 +46,12 @@ export async function middleware(request: NextRequest) {
     // For real performance, we'd use a custom claim in JWT, 
     // but for now we'll fetch profile if on a sensitive route
     if (url.pathname.startsWith('/doctor') || url.pathname.startsWith('/dashboard')) {
-        let profile = null
-        for (let i = 0; i < 3; i++) {
-            const { data: p } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', user.id)
-                .single()
-            if (p) {
-                profile = p
-                break
-            }
-            // Wait 500ms before next retry
-            await new Promise(resolve => setTimeout(resolve, 500))
-        }
+        // Fetch profile once, or use metadata if available
+        const { data: profile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single()
         
         const role = profile?.role || user.user_metadata?.role || 'USER'
         

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/i18n';
 
 const navKeys = [
@@ -25,7 +25,6 @@ export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
-    const pathname = usePathname();
     const { lang, setLang, t } = useLanguage();
     const supabase = createClient();
 

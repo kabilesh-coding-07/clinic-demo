@@ -58,8 +58,8 @@ export default function RegisterPage() {
             } else {
                 router.push('/login?message=Check your email to confirm your account');
             }
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred during registration.');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred during registration.');
         } finally {
             setLoading(false);
         }

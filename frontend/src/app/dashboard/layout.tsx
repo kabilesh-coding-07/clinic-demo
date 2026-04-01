@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 const sidebarLinks = [
     { href: '/dashboard', label: 'Overview', icon: '📊' },
@@ -11,40 +11,20 @@ const sidebarLinks = [
     { href: '/dashboard/profile', label: 'My Profile', icon: '👤' },
 ];
 
-import { createClient } from '@/utils/supabase/client';
+import { useUser } from '@/providers/user-context';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+    const { profile: user, loading, signOut } = useUser();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const supabase = createClient();
-
-    useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                const { data: profile } = await supabase
-                    .from('users')
-                    .select('name, email, role')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                if (profile) {
-                    setUser(profile);
-                }
-            } else {
-                router.push('/login');
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [router, supabase]);
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        await signOut();
         router.push('/');
     };
 
+    if (loading) return null;
     if (!user) return null;
 
     return (

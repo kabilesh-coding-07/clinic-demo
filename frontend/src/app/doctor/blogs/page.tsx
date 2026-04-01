@@ -16,34 +16,40 @@ interface Blog {
     updatedAt: string;
 }
 
+import { useUser } from '@/providers/user-context';
+
+
 export default function DoctorBlogsPage() {
     const { t } = useLanguage();
+    const { profile: user, loading: userLoading } = useUser();
     const [blogs, setBlogs] = useState<Blog[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                try {
-                    const { data, error } = await supabase
-                        .from('blogs')
-                        .select('*')
-                        .eq('authorId', session.user.id)
-                        .order('createdAt', { ascending: false });
+        const loadBlogs = async () => {
+            if (!user) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('blogs')
+                    .select('*')
+                    .eq('authorId', user.id)
+                    .order('createdAt', { ascending: false });
 
-                    if (!error && data) setBlogs(data);
-                } catch (err) {
-                    console.error('Error fetching blogs:', err);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
+                if (!error && data) setBlogs(data);
+            } catch (err) {
+                console.error('Error fetching blogs:', err);
+            } finally {
                 setLoading(false);
             }
-        });
+        };
 
-        return () => subscription.unsubscribe();
-    }, []);
+        if (user) {
+            loadBlogs();
+        } else if (!userLoading) {
+            setLoading(false);
+        }
+    }, [user, userLoading]);
 
     const deleteBlog = async (id: string) => {
         if (!confirm(t('doctor.deleteBlogConfirm'))) return;
